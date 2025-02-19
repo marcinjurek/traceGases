@@ -1,0 +1,78 @@
+cat(sprintf("%s simulations started\n", Sys.time()))
+source("results-display.r")
+source("settings.r")
+## generate grid of pred.locs
+grid.oneside <- seq(0,1,length = round(sqrt(n)))
+locs <- as.matrix(expand.grid(grid.oneside,grid.oneside)) 
+covparms <- c(sig_02, range, smooth)
+
+## set initial state
+dist_mat <- fields::rdist(locs)
+Sig0 <- GPvecchia::MaternFun(dist_mat, covparms)
+Sig0C <- t(chol(Sig0))
+
+x0 <- Sig0C %*% matrix(rnorm(n), ncol = 1)
+
+## define Vecchia approximation
+exact <- GPvecchia::vecchia_specify(locs, n - 1,
+                                    conditioning = "firstm",
+                                    verbose = TRUE)
+mra <- GPvecchia::vecchia_specify(locs, m,
+                                  conditioning = "mra")
+m_lr <- ncol(mra$U.prep$revNNarray) - 1
+low.rank <- GPvecchia::vecchia_specify(locs, m_lr,
+                                       conditioning = "firstm",
+                                       verbose = TRUE)
+#approximations = list(mra = mra)#, low.rank = low.rank, exact = exact)
+approximations <- list(mra = mra)#, low.rank = low.rank, exact = exact)
+
+
+
+Linvs <- list()#truth = solve(chol(Sig0Mat)))
+for (name in names(approximations)) {
+    appr <- approximations[[name]]
+    matCov <- GPvecchia::getMatCov(appr, covfun_d_0)
+    L <- GPvecchia::createL(appr, matCov)
+    Linvs[[name]] <- solve(L, sparse = TRUE)
+}
+
+
+XY <- simulate_xy(x0, evolFun, NULL, frac.obs, lik_params,
+                  Tmax, sig2 = sig2, smooth = smooth,
+                  range = range, locs = locs)
+
+
+for (t in 1:Tmax) {
+    pdf(sprintf("simualted-field-%d.pdf", t))
+    fields::quilt.plot(locs[, 1], locs[, 2], as.numeric(XY$x[[t]]), nx = sqrt(n), ny = sqrt(n))
+    dev.off()
+}
+
+
+##### scalable FFBS
+# run smoothing for each sample; maybe this can be optimized
+samples <- list()
+for( iter in 1:n_iter ) {
+
+    #samples = foreach( sample.no = 1:Nsamples ) %dopar% {
+    XY <- simulate_xy(x0, evolFun, NULL, frac.obs, lik_params, Tmax, sig2 = sig2, smooth = smooth, range = range, locs = locs)
+    #smoothingResults <- FFBS(mra, XY$y, lik_params, prior_covparams, covparms, evolFun, Num_samples = 1, covparams = NULL)
+    smoothingResults <- FFBS(mra, XY$y, lik_params, prior_covparams, covparms, evolFun, Num_samples = n_samples)
+
+    samples <- smoothingResults$samples
+    results <- smoothingResults$filteringResults
+
+    meansPS <- getMeansFromSamples(samples)
+    sdsPS   <- getSDFromSamples(samples)
+    meansF  <- getMeansFromFilter(results$preds)
+    sdsF    <- getSDFromFilter(results$preds)
+
+    plot2Results(XY, meansPS, sdsPS, meansF, sdsF, paste(data.model, "-ps-f", sep = ""))
+
+}
+
+###### compare with naive Kalman Smoother
+#KSsmooth = KalmanSmoother(XY$y)
+#meansKS = getMeansFromSmoother( KSsmooth$smoothed )
+#sdsKS   = getSDFromSmoother( KSsmooth$smoothed )
+#plot2Results(XY, meansPS, sdsPS, meansKS, sdsKS, paste(data.model, '-ps-ks', sep = ""))
