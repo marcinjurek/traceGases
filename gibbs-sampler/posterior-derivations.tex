@@ -1,0 +1,43 @@
+\documentclass[a4paper,12pt]{article} % Document class
+
+% Packages for additional functionality
+\usepackage[utf8]{inputenc}  % Encoding
+\usepackage{amsmath, amssymb} % Math symbols
+\usepackage{graphicx}         % Images
+\usepackage{hyperref}         % Clickable links
+\usepackage{xcolor}           % Color text
+\usepackage{geometry}         % Page layout
+\usepackage{bm}
+\geometry{margin=1in}        % Set 1-inch margins
+\newcommand{\bx}{\bm{x}}
+\newcommand{\by}{\bm{y}}
+\newcommand{\bM}{\bm{M}}
+\newcommand{\bQ}{\bm{Q}}
+\newcommand{\bI}{\bm{I}}
+\newcommand{\bw}{\bm{w}}
+\newcommand{\bv}{\bm{v}}
+
+% Document title, author, and date
+\title{Deriving the posterior}
+\date{\today} % Automatically inserts today's date
+\maketitle
+
+\begin{document}
+
+
+Start by considering a linear Gaussian state-space model:
+\begin{align*}
+\bx_t &= (\bM_1 + a\bM_2)\bx_{t - 1} + \bw_t\\
+\by_t &= \bx_t + \bv_t,
+\end{align*}
+where $\bw_t \sim N(0, \bQ)$ and $\bv_t \sim N(0, \tau^2\bI)$ and $t = 1, \dots, T$. We observe $\by_t$ at each $t$ while $\bx_t, \bw_t, \bv_t$ are latent. We want to calculate the posterior of $a$ assuming, that $p(a)$ is the prior for $a$ We assume, for simplicity, that $\tau$ and $\bQ$ are known. Formally, we need to calculate
+\begin{equation}
+  p(a|\bx_{1:T}, \by_{1:T}) = \frac{p(a, \bx_{1:T}, \by_{1:T})}{p(\bx_{1:T}, \by_{1:T})}. 
+\end{equation}
+Finding the denominator is difficulut be we might not really need it. Let's first start with the numerator.
+\begin{multline}
+  p(a, \bx_{1:T}, \by_{1:T}) = p(\by_{1:T} | \bx_{1:T}, a) p(\bx_{1:T}|a) p(a)
+  \end{multline}
+
+
+\end{document}

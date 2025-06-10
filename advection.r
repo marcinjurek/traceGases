@@ -1,26 +1,8 @@
-evolDiff <- function(state, adv = 0, alpha = 1, diff = 1/alpha, nsteps = 1, rho = 1) {
-  # we assume that there is the same number of grid points
-  # along each dimension
-    if(is.null(dim(state))) {
-        N <- length(state)
-    } else {
-        N <- dim(state)[1]
-    }
-    
-    Ny <- Nx <- sqrt(N)
+advDiffMat <- function(c1, c2, c3, N, Nx, Ny) {
 
-    dx <- dy <- 1/Nx
-    omega <- 4*diff/(dx ** 2)
-    max.diff <- dx**2/4
-
-    
-    if (omega + 2*adv / dx <= 1) {
-        stop(sprintf("stability condition is not satisfied. Current value = %f, value 1 needed for stability", omega + 2*adv / dx))
-    }
-    #browser()
-    c1 <- 1 - omega - 2 * adv
-    c2 <- 0.25 * omega
-    c3 <- 0.25 * omega + adv
+    ## c1 <- 1 - omega - 2 * adv
+    ## c2 <- 0.25 * omega
+    ## c3 <- 0.25 * omega + adv
 
     ## Let's consider the following layout on the grid
     ## . . . . .
@@ -45,6 +27,35 @@ evolDiff <- function(state, adv = 0, alpha = 1, diff = 1/alpha, nsteps = 1, rho 
     
     diags <- list(d, a, x, b, c)
     E <- Matrix::bandSparse(N, k=c(-Nx, -1, 0, 1, Nx), diag=diags)
+
+    return(E)
+}
+
+    
+
+evolDiff <- function(state, adv = 0, alpha = 1, diff = 1/alpha, nsteps = 1, rho = 1) {
+  # we assume that there is the same number of grid points
+  # along each dimension
+    if(is.null(dim(state))) {
+        N <- length(state)
+    } else {
+        N <- dim(state)[1]
+    }
+    
+    Ny <- Nx <- sqrt(N)
+
+    dx <- dy <- 1/Nx
+    omega <- 4*diff/(dx ** 2)
+    max.diff <- dx**2/4
+
+    c1 <- 1 - omega - 2 * adv
+    c2 <- 0.25 * omega
+    c3 <- 0.25 * omega + adv
+    
+    if (omega + 2*adv / dx <= 1) {
+        stop(sprintf("stability condition is not satisfied. Current value = %f, value 1 needed for stability", omega + 2*adv / dx))
+    }
+    E <- advDiffMat(c1, c2, c3, N, Nx, Ny)
 
     for (i in 1:nsteps) {
         if (methods::is(state, "matrix") || methods::is(state, "sparseMatrix")) {

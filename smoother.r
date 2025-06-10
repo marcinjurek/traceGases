@@ -9,11 +9,15 @@ smoothedMeans = function(approx, Y, lik.params, prior_covparams, Qcovparms, evol
     means = list()
     means[[Tmax]] = preds$preds[[Tmax]]
 
-    cat(sprintf("%s Smoother: Finished filtering\n", Sys.time()))
+    if (verbose) {
+        cat(sprintf("%s Smoother: Finished filtering\n", Sys.time()))
+    }
 
     for (t in (Tmax - 1):1) {
 
-        cat(sprintf("%s \t Smoother: Calculating smoothing mean at t=%d\n", Sys.time(), t))
+        if (verbose) {
+            cat(sprintf("%s \t Smoother: Calculating smoothing mean at t=%d\n", Sys.time(), t))
+        }
         E = evolFun(Matrix::Diagonal(n))
         L = preds$Ls[[t + 1]]
         V = preds$Vs[[t]]

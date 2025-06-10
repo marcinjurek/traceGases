@@ -1,0 +1,90 @@
+\documentclass[a4paper,12pt]{article} % Document class
+
+% Packages for additional functionality
+\usepackage[utf8]{inputenc}  % Encoding
+\usepackage{amsmath, amssymb} % Math symbols
+\usepackage{graphicx}         % Images
+\usepackage{hyperref}         % Clickable links
+\usepackage{xcolor}           % Color text
+\usepackage{geometry}         % Page layout
+\usepackage{bm}
+\geometry{margin=1in}        % Set 1-inch margins
+\newcommand{\bx}{\bm{x}}
+\newcommand{\by}{\bm{y}}
+\newcommand{\bM}{\bm{M}}
+\newcommand{\bQ}{\bm{Q}}
+\newcommand{\bI}{\bm{I}}
+\newcommand{\bw}{\bm{w}}
+\newcommand{\bv}{\bm{v}}
+\newcommand{\bd}{\bm{d}}
+
+% Document title, author, and date
+\title{Deriving the posterior}
+\date{\today} % Automatically inserts today's date
+
+\begin{document}
+\maketitle
+
+Start by considering a linear Gaussian state-space model:
+\begin{align*}
+\bx_t &= (\bM_1 + a\bM_2)\bx_{t - 1} + \bw_t\\
+\by_t &= \bx_t + \bv_t,
+\end{align*}
+where $\bw_t \sim N(0, \bQ)$ and $\bv_t \sim N(0, \tau^2\bI)$ and $t = 1, \dots, T$. We observe $\by_t$ at each $t$ while $\bx_t, \bw_t, \bv_t$ are latent. We want to calculate the posterior of $a$ assuming, that $\pi(a)$ is the prior for $a$ We assume, for simplicity, that $\tau$ and $\bQ$ are known. Formally, we need to calculate
+\begin{equation}
+  p(a|\bx_{1:T}, \by_{1:T}) = \frac{p(a, \bx_{1:T}, \by_{1:T})}{p(\bx_{1:T}, \by_{1:T})}. 
+\end{equation}
+Finding the denominator is difficulut be we might not really need it. Let's first start with the numerator.
+$$
+p(a, \bx_{1:T}, \by_{1:T}) = p(\by_{1:T} | \bx_{1:T}, a) p(\bx_{1:T}|a) \pi(a).
+$$
+For the sake of this derivation the first term can be considered constant (we'll call it $C$) while we can expand the second:
+\begin{multline*}
+  p(a, \bx_{1:T}, \by_{1:T}) = Cp(\bx_1)\prod_{t=2}^Tp(\bx_t|\bx_{t-1}, a) \pi(a) = \\
+  Cp(\bx_1)\pi(a) \prod_{t=2}^T \frac{1}{\sqrt{2\pi|\bQ|}} \exp\left(-\frac{1}{2}\bd(a)'\bQ^{-1}\bd(a)\right),
+\end{multline*}
+where $\bd(a) = \bx_t - (\bM_1 + a\bM_2)\bx_{t-1}$.
+Taking logs, and suppressing explicit dependence on $\bx_{1:T}, \by_{1:T}$ for brevity, we get
+$$
+\log p(a) = \log C + \log(p(\bx_1)) + \log \pi(a) - \frac{T}{2}\log (2\pi |\bQ|) - \frac{1}{2}\sum_{t=2}^T \bd(a)'\bQ^{-1}\bd(a).
+$$
+Since we are only interested in the terms that include $a$ we can collect the other terms and call them $B$. This gives us
+$$
+\log p(a) = B + \log \pi(a) -\frac{1}{2} \sum_{t=2}^T \left(\bx_t - (\bM_1 + a\bM_2)\bx_{t-1}\right)'\bQ^{-1} \left(\bx_t - (\bM_1 + a\bM_2)\bx_{t-1}\right).
+$$
+We can now break up the quadratic form under the summation so that we are left with only the terms that include $a$. We thus call all the terms that don't involve $a$ $A$
+\begin{multline}
+  \log p(a) = A + \log \pi(a) +\frac{a}{2} \sum_{t=2}^T 2\left(\bM_2\bx_{t-1}\right)'\bQ^{-1}\left(\bx_t - \bM_1\bx_{t-1}\right) \\
+  -\frac{a^2}{2}\sum_{t=2}^T \bx_{t-1}'\bM_2'\bQ^{-1}\bM_2\bx_{t-1}
+\end{multline}
+If we now call the sum, including the $0.5$ factors, $S_1$ and $S_2$, respectively, we can rewrite this as
+$$
+\log p(a) = A + \log \pi(a) + a S_1 - a^2 S_2.  
+$$
+Then we can complete the square to get
+$$
+\log p(a) = A + \log \pi(a) - S_2\left(a - \frac{S_1}{2S_2}\right)^2 + c = A+c + \log\pi(a) - \frac{1}{2\frac{1}{2S_2}}\left(a - \frac{S_1}{2S_2}\right)^2,
+$$
+where $c$ is some expression which does not depend on $a$ and is the result of completing the square.
+If we now assume that the prior on $a$ is Gaussian, i.e. that $\log \pi(a) = -\frac{1}{2\nu^2}(a - \mu_a)^2 + \log \frac{1}{\sqrt{2\pi\nu^2}}$, we can write
+$$
+\log p(a) = \tilde{A} -\frac{1}{2\nu^2}(a - \mu_a)^2 - \frac{1}{2\frac{1}{2S_2}}\left(a - \frac{S_1}{2S_2}\right)^2,
+$$
+where $\tilde{A}$ is yet another constant which does not depend on $a$.
+
+Combining the two sqaures and using yet another constant, $\hat{A}$ we can then write the posterior distribution of $a$ as
+$$
+\log p(a) = \hat{A} - \frac{1}{2\hat{\sigma}^2_a} \left(a - \hat{\mu}_a\right)^2,
+$$
+where
+\begin{align*}
+  \hat{\sigma}^2 &= \frac{1}{\frac{1}{\nu^2} + 2S_2} \\
+  \hat{\mu}_a &= \frac{\frac{\mu_a}{\nu^2} +S_1}{\frac{1}{\nu^2} + 2S_2},
+\end{align*}
+with
+\begin{align}
+  S_1 &= \sum_{t=2}^T \left(\bM_2\bx_{t-1}\right)'\bQ^{-1}\left(\bx_t - \bM_1\bx_{t-1}\right)\\
+  S_2 &= \frac{1}{2}\sum_{t=2}^T \bx_{t-1}'\bM_2'\bQ^{-1}\bM_2\bx_{t-1}
+  \end{align}
+
+\end{document}
